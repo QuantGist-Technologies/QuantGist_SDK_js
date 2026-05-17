@@ -1,21 +1,90 @@
-export { QuantGistClient } from "./client.js";
+export { QuantGistClient } from './client';
+export type { QuantGistClientOptions, BaseClient } from './client';
+
 export {
   QuantGistError,
   AuthenticationError,
   RateLimitError,
   NotFoundError,
   PlanUpgradeRequired,
-} from "./errors.js";
+} from './errors';
+
+export type { UsageEndpointEntry } from './resources/usage';
+
 export type {
-  // Shared
-  Impact,
-  QuantGistClientOptions,
-  // Macro events
+  // Core models
   Event,
-  EventsResponse,
-  GetEventsParams,
-  ResponseMeta,
-  // Earnings
+  CalendarEvent,
+  CalendarResponse,
+  CalendarRangeResponse,
+  NewsItem,
+  Symbol,
+  SymbolDetail,
+  UsageSummary,
+  UsageHistoryEntry,
+  UsageHistoryResponse,
+  UsageKeyEntry,
+  PaginatedResponse,
+
+  // Intelligence models
+  SurpriseEvent,
+  MoverEvent,
+  IntelligenceParams,
+
+  // Watchlist models
+  Watchlist,
+  WatchlistItem,
+  CreateWatchlistParams,
+  AddWatchlistItemParams,
+  WatchlistEventsParams,
+
+  // Sentiment models
+  SentimentGroupBy,
+  SentimentSummaryGroup,
+  SentimentSummaryParams,
+  SentimentEventsParams,
+
+  // Webhook models
+  WebhookDeliveryStatus,
+  WebhookEndpoint,
+  WebhookEndpointWithSecret,
+  WebhookDelivery,
+  CreateWebhookParams,
+  UpdateWebhookParams,
+  ListWebhooksParams,
+  WebhookDeliveriesParams,
+  WebhookTestResult,
+  WebhookBranding,
+  UpdateWebhookBrandingParams,
+
+  // Notification models
+  NotificationChannelType,
+  NotificationChannel,
+  CreateNotificationChannelParams,
+  UpdateNotificationChannelParams,
+  ListNotificationChannelsParams,
+  NotificationChannelTestResult,
+
+  // Query param types
+  Impact,
+  ImpactLevel,
+  SortOrder,
+  SentimentLabel,
+  HistoricalFormat,
+  ListEventsParams,
+  HistoricalEventsParams,
+  CalendarParams,
+  CalendarRangeParams,
+  CalendarUpcomingParams,
+  CalendarRangeNewParams,
+  ListNewsParams,
+  ListSymbolsParams,
+  SymbolEventsParams,
+  UsageHistoryParams,
+
+  // ----- Legacy / deprecated -----
+  // Kept so consumers of the older client (earnings/markets/changelog wrappers)
+  // continue to typecheck. Prefer the modern resource-based API.
   BeatMiss,
   ReportTime,
   EarningsEvent,
@@ -28,10 +97,9 @@ export type {
   EarningsWeekDay,
   EarningsWeekCalendar,
   EarningsSeasonSummary,
-  // Markets
   MarketQuote,
   MarketsOverviewResponse,
-  // Changelog
   ChangelogEntry,
   ChangelogResponse,
-} from "./types.js";
+  GetEventsParams,
+} from './types';

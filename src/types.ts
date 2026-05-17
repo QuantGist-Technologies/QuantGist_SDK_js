@@ -2,68 +2,477 @@
 // Shared / utility
 // ---------------------------------------------------------------------------
 
-export type Impact = "low" | "medium" | "high";
+export type ImpactLevel = 'low' | 'medium' | 'high';
+export type SortOrder = 'asc' | 'desc';
+export type SentimentLabel = 'positive' | 'negative' | 'neutral';
+export type HistoricalFormat = 'json' | 'ndjson';
 
-export interface QuantGistClientOptions {
-  apiKey?: string;
-  baseUrl?: string;
-  timeout?: number;
-}
+/** Legacy alias kept for backwards compatibility with older SDK consumers. */
+export type Impact = ImpactLevel;
 
 // ---------------------------------------------------------------------------
-// Macro events
+// Macro events (modern canonical shape)
 // ---------------------------------------------------------------------------
 
 export interface Event {
   id: string;
   title: string;
-  country: string;
+  event_type: string;
   currency: string;
-  release_time: string; // ISO 8601 UTC
-  impact: Impact;
-  forecast: number | null;
-  previous: number | null;
-  actual: number | null;
-  surprise_score: number | null;
-  affected_symbols: string[];
+  symbols: string[];
+  impact: ImpactLevel;
+  actual_value: number | null;
+  forecast_value: number | null;
+  previous_value: number | null;
+  release_time: string;
+  source: string;
+  sentiment_score: number | null;
+  created_at: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  event_type: string;
+  currency: string;
+  impact: ImpactLevel;
+  release_time: string;
+  actual_value: number | null;
+  forecast_value: number | null;
+  previous_value: number | null;
   source: string;
 }
 
-export interface ResponseMeta {
+export interface CalendarResponse {
+  date: string;
+  events: CalendarEvent[];
+}
+
+export interface CalendarRangeResponse {
+  date_from: string;
+  date_to: string;
+  events: CalendarEvent[];
+}
+
+export interface NewsItem {
+  id: string;
+  title: string;
+  body: string;
+  source: string;
+  currency: string;
+  symbols: string[];
+  impact: ImpactLevel | null;
+  published_at: string;
+  url: string | null;
+  sentiment_score: number | null;
+}
+
+export interface Symbol {
+  symbol: string;
+  name: string;
+  currency: string;
+  exchange: string | null;
+}
+
+export interface UsageSummary {
+  plan: string;
+  requests_used: number;
+  requests_limit: number;
+  requests_remaining: number;
+  reset_at: string;
+}
+
+export interface UsageHistoryEntry {
+  date: string;
+  requests: number;
+}
+
+export interface UsageHistoryResponse {
+  days: number;
+  history: UsageHistoryEntry[];
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
   total: number;
   page: number;
-  per_page: number;
-  rate_limit_remaining?: number;
+  page_size: number;
+  pages: number;
 }
 
-export interface EventsResponse {
-  data: Event[];
-  meta: ResponseMeta;
-}
+// ---- Query param shapes ----
 
-export interface GetEventsParams {
-  from?: string;
-  to?: string;
-  country?: string;
-  currency?: string;
-  impact?: Impact;
+export interface ListEventsParams {
   symbol?: string;
-  limit?: number;
+  symbols?: string | string[];
+  currency?: string;
+  impact?: ImpactLevel;
+  event_type?: string;
+  source?: string;
+  from_date?: string;
+  to_date?: string;
+  q?: string;
+  sentiment?: SentimentLabel;
+  min_sentiment?: number;
+  max_sentiment?: number;
+  sort_by?: string;
+  sort_order?: SortOrder;
   page?: number;
+  page_size?: number;
 }
 
-// ---------------------------------------------------------------------------
-// Earnings
-// ---------------------------------------------------------------------------
+export interface HistoricalEventsParams {
+  symbol?: string;
+  from_date?: string;
+  to_date?: string;
+  format?: HistoricalFormat;
+  page?: number;
+  page_size?: number;
+}
 
-export type BeatMiss = "beat" | "miss" | "in-line";
-export type ReportTime = "before_open" | "after_close" | "during_market";
+export interface CalendarParams {
+  date?: string;
+  currency?: string;
+  impact?: ImpactLevel;
+  include_actual?: boolean;
+}
+
+export interface CalendarRangeParams {
+  date_from: string;
+  date_to: string;
+  currency?: string;
+  impact?: ImpactLevel;
+  include_actual?: boolean;
+}
+
+export interface ListNewsParams {
+  source?: string;
+  currency?: string;
+  symbol?: string;
+  symbols?: string | string[];
+  impact?: ImpactLevel;
+  from_date?: string;
+  to_date?: string;
+  q?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface ListSymbolsParams {
+  q?: string;
+  currency?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface UsageHistoryParams {
+  days?: number;
+}
+
+// ---- Intelligence ----
+
+export interface SurpriseEvent {
+  id: string;
+  title: string;
+  currency: string;
+  impact: ImpactLevel;
+  release_time: string;
+  actual_value: number | null;
+  forecast_value: number | null;
+  surprise: number | null;
+  surprise_pct: number | null;
+}
+
+export interface MoverEvent {
+  id: string;
+  title: string;
+  currency: string;
+  impact: ImpactLevel;
+  release_time: string;
+  actual_value: number | null;
+  forecast_value: number | null;
+  price_change_pct: number | null;
+}
+
+export interface IntelligenceParams {
+  currency?: string;
+  impact?: ImpactLevel;
+  from_date?: string;
+  to_date?: string;
+  limit?: number;
+}
+
+// ---- Watchlists ----
+
+export interface Watchlist {
+  id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+}
+
+export interface WatchlistItem {
+  id: string;
+  watchlist_id: string;
+  item_type: string;
+  item_value: string;
+  created_at: string;
+}
+
+export interface CreateWatchlistParams {
+  name: string;
+  description?: string;
+}
+
+export interface AddWatchlistItemParams {
+  item_type: string;
+  item_value: string;
+}
+
+export interface WatchlistEventsParams {
+  from_date?: string;
+  to_date?: string;
+  impact?: ImpactLevel;
+  page?: number;
+  page_size?: number;
+}
+
+// ---- Calendar upcoming / range (updated) ----
+
+export interface CalendarUpcomingParams {
+  currency?: string;
+  impact?: ImpactLevel;
+  limit?: number;
+}
+
+export interface CalendarRangeNewParams {
+  start: string;
+  end: string;
+  currencies?: string | string[];
+  impact?: ImpactLevel;
+  limit?: number;
+}
+
+// ---- Symbol detail / symbol events ----
+
+export interface SymbolDetail extends Symbol {
+  asset_type?: string | null;
+}
+
+export interface SymbolEventsParams {
+  from_date?: string;
+  to_date?: string;
+  impact?: ImpactLevel;
+  page?: number;
+  page_size?: number;
+}
+
+// ---- Usage keys ----
+
+export interface UsageKeyEntry {
+  key_prefix: string;
+  requests_today: number;
+  requests_this_month: number;
+  last_used_at: string | null;
+}
+
+// ---- Sentiment ----
+
+export type SentimentGroupBy = 'currency' | 'country' | 'event_type' | 'sector';
+
+export interface SentimentSummaryGroup {
+  group: string;
+  event_count: number;
+  avg_sentiment: number | null;
+  positive_count: number;
+  negative_count: number;
+  neutral_count: number;
+  most_recent_event_time: string | null;
+}
+
+export interface SentimentSummaryParams {
+  currency?: string;
+  country?: string;
+  from_date?: string;
+  to_date?: string;
+  group_by?: SentimentGroupBy;
+}
+
+export interface SentimentEventsParams {
+  currency?: string;
+  country?: string;
+  sentiment?: SentimentLabel;
+  min_score?: number;
+  max_score?: number;
+  from_date?: string;
+  to_date?: string;
+  page?: number;
+  per_page?: number;
+  sort_order?: SortOrder;
+}
+
+// ---- Webhooks ----
+
+export type WebhookDeliveryStatus = 'pending' | 'delivered' | 'failed' | 'dlq';
+
+export interface WebhookEndpoint {
+  id: string;
+  user_id: string;
+  url: string;
+  events: string[];
+  filters: Record<string, unknown>;
+  impact_filter: string[];
+  payload_template: string | null;
+  custom_headers: Record<string, string>;
+  is_active: boolean;
+  failure_count: number;
+  last_triggered_at: string | null;
+  last_failure_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WebhookEndpointWithSecret extends WebhookEndpoint {
+  /** Signing secret — returned only on create; never persisted client-side. */
+  secret: string;
+}
+
+export interface WebhookDelivery {
+  id: string;
+  webhook_endpoint_id: string;
+  event_id: string;
+  payload: Record<string, unknown>;
+  status: WebhookDeliveryStatus;
+  attempts: number;
+  last_attempt_at: string | null;
+  response_status: number | null;
+  response_body: string | null;
+  next_retry_at: string | null;
+  created_at: string;
+}
+
+export interface CreateWebhookParams {
+  url: string;
+  events?: string[];
+  filters?: Record<string, unknown>;
+  impact_filter?: string[];
+  payload_template?: string | null;
+  custom_headers?: Record<string, string>;
+}
+
+export interface UpdateWebhookParams {
+  url?: string;
+  events?: string[];
+  filters?: Record<string, unknown>;
+  is_active?: boolean;
+  impact_filter?: string[];
+  payload_template?: string | null;
+  custom_headers?: Record<string, string>;
+}
+
+export interface ListWebhooksParams {
+  page?: number;
+  per_page?: number;
+}
+
+export interface WebhookDeliveriesParams {
+  page?: number;
+  per_page?: number;
+  status?: WebhookDeliveryStatus;
+}
+
+export interface WebhookTestResult {
+  success: boolean;
+  status_code: number | null;
+  response_body: string;
+  payload: Record<string, unknown>;
+}
+
+export interface WebhookBranding {
+  /** UUID of the branding record, or null when defaults are returned. */
+  id?: string | null;
+  user_id: string;
+  bot_name: string;
+  bot_avatar_url: string | null;
+  color_hex: string;
+  footer_text: string;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface UpdateWebhookBrandingParams {
+  bot_name?: string;
+  bot_avatar_url?: string;
+  color_hex?: string;
+  footer_text?: string;
+}
+
+// ---- Notifications ----
+
+export type NotificationChannelType = 'discord' | 'telegram' | 'email';
+
+export interface NotificationChannel {
+  id: string;
+  user_id: string;
+  channel_type: NotificationChannelType;
+  name: string;
+  config_summary: Record<string, unknown>;
+  events: string[];
+  filters: Record<string, unknown>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateNotificationChannelParams {
+  channel_type: NotificationChannelType;
+  name?: string;
+  config?: Record<string, unknown>;
+  events?: string[];
+  filters?: Record<string, unknown>;
+}
+
+export interface UpdateNotificationChannelParams {
+  name?: string;
+  config?: Record<string, unknown>;
+  events?: string[];
+  filters?: Record<string, unknown>;
+  is_active?: boolean;
+}
+
+export interface ListNotificationChannelsParams {
+  page?: number;
+  per_page?: number;
+}
+
+export interface NotificationChannelTestResult {
+  success: boolean;
+  channel_type: NotificationChannelType;
+  queued: boolean;
+  error: string | null;
+  payload: Record<string, unknown>;
+}
+
+// ===========================================================================
+// Legacy / deprecated types
+// ===========================================================================
+//
+// The types below back the `/v1/earnings/*` deprecation aliases on
+// `QuantGistClient`. The backend resource was removed; the wrapper methods
+// emit `console.warn` and route to the closest real endpoint (or throw
+// `NotFoundError`). Kept here so existing consumers of the old SDK continue
+// to typecheck.
+
+// ---- Earnings (deprecated) ----
+
+export type BeatMiss = 'beat' | 'miss' | 'in-line';
+export type ReportTime = 'before_open' | 'after_close' | 'during_market';
 
 export interface EarningsEvent {
   id: string;
   ticker: string;
   company_name: string;
-  report_date: string; // ISO date (YYYY-MM-DD)
+  report_date: string;
   fiscal_quarter: string | null;
   eps_estimate: number | null;
   eps_actual: number | null;
@@ -74,13 +483,9 @@ export interface EarningsEvent {
   market_cap: number | null;
   sector: string | null;
   report_time: ReportTime | null;
-  /** URL to the SEC EDGAR 8-K filing. */
   sec_filing_url: string | null;
-  /** SEC accession number, e.g. "0000320193-26-000001". */
   sec_accession_number: string | null;
-  /** Date filed with the SEC (ISO date). */
   sec_filed_at: string | null;
-  /** Provenance map per field, e.g. { eps_actual: "fmp", sec_filing_url: "sec_edgar" }. */
   field_sources: Record<string, string>;
 }
 
@@ -136,7 +541,7 @@ export interface EarningsMover {
 }
 
 export interface EarningsWeekDay {
-  date: string; // ISO date
+  date: string;
   events: EarningsEvent[];
 }
 
@@ -158,9 +563,7 @@ export interface EarningsSeasonSummary {
   index: string | null;
 }
 
-// ---------------------------------------------------------------------------
-// Markets
-// ---------------------------------------------------------------------------
+// ---- Markets (legacy /markets/* endpoints) ----
 
 export interface MarketQuote {
   symbol: string;
@@ -171,20 +574,18 @@ export interface MarketQuote {
   low: number | null;
   volume: number | null;
   change_pct: number | null;
-  as_of: string | null; // ISO date
+  as_of: string | null;
 }
 
 export interface MarketsOverviewResponse {
   data: MarketQuote[];
 }
 
-// ---------------------------------------------------------------------------
-// Changelog
-// ---------------------------------------------------------------------------
+// ---- Changelog ----
 
 export interface ChangelogEntry {
   version: string;
-  date: string; // ISO date
+  date: string;
   summary: string;
   breaking: boolean;
   changes: string[];
@@ -192,4 +593,17 @@ export interface ChangelogEntry {
 
 export interface ChangelogResponse {
   data: ChangelogEntry[];
+}
+
+// ---- Legacy macro-event params shape (deprecated) ----
+
+export interface GetEventsParams {
+  from?: string;
+  to?: string;
+  country?: string;
+  currency?: string;
+  impact?: ImpactLevel;
+  symbol?: string;
+  limit?: number;
+  page?: number;
 }
