@@ -1,6 +1,19 @@
 export { QuantGistClient } from './client';
 export type { QuantGistClientOptions, BaseClient } from './client';
 
+export { V2Resource } from './resources/v2';
+export type {
+  V2EventsParams,
+  V2BacktestParams,
+  V2Event,
+  V2EventListResponse,
+  V2EventDetailResponse,
+  V2Vintage,
+  V2VintageListResponse,
+  CanonicalEvent,
+  CanonicalEventsResponse,
+} from './resources/v2';
+
 export {
   QuantGistError,
   AuthenticationError,
@@ -14,6 +27,8 @@ export type { UsageEndpointEntry } from './resources/usage';
 export type {
   // Core models
   Event,
+  EventsResponse,
+  ResponseMeta,
   CalendarEvent,
   CalendarResponse,
   CalendarRangeResponse,

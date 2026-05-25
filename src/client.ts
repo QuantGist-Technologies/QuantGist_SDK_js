@@ -7,6 +7,7 @@ import { NotificationsResource } from './resources/notifications';
 import { SentimentResource } from './resources/sentiment';
 import { SymbolsResource } from './resources/symbols';
 import { UsageResource } from './resources/usage';
+import { V2Resource } from './resources/v2';
 import { WatchlistsResource } from './resources/watchlists';
 import { WebhooksResource } from './resources/webhooks';
 import type {
@@ -23,6 +24,7 @@ import type {
 } from './types';
 
 const DEFAULT_BASE_URL = 'https://api.quantgist.com/v1';
+const DEFAULT_V2_BASE_URL = 'https://api.quantgist.com/v2';
 
 export interface QuantGistClientOptions {
   /** Your QuantGist API key (e.g. qg_live_...) */
@@ -68,6 +70,8 @@ export class QuantGistClient implements BaseClient {
   readonly sentiment: SentimentResource;
   readonly symbols: SymbolsResource;
   readonly usage: UsageResource;
+  /** v2 official-source, revision-aware API (Pro+ plan required). */
+  readonly v2: V2Resource;
   readonly watchlists: WatchlistsResource;
   readonly webhooks: WebhooksResource;
 
@@ -77,6 +81,10 @@ export class QuantGistClient implements BaseClient {
     }
     this.apiKey = options.apiKey;
     this.baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/$/, '');
+    // Derive v2 base URL from base_url (replace /v1 suffix) or use default.
+    const v2BaseUrl = this.baseUrl.includes('/v1')
+      ? this.baseUrl.replace('/v1', '/v2')
+      : DEFAULT_V2_BASE_URL;
 
     this.events = new EventsResource(this);
     this.calendar = new CalendarResource(this);
@@ -86,6 +94,7 @@ export class QuantGistClient implements BaseClient {
     this.sentiment = new SentimentResource(this);
     this.symbols = new SymbolsResource(this);
     this.usage = new UsageResource(this);
+    this.v2 = new V2Resource(this.apiKey, v2BaseUrl);
     this.watchlists = new WatchlistsResource(this);
     this.webhooks = new WebhooksResource(this);
   }
@@ -140,172 +149,75 @@ export class QuantGistClient implements BaseClient {
   }
 
   // ===========================================================================
-  // DEPRECATED: /v1/earnings/* aliases
+  // /v1/earnings/* compatibility wrappers
   //
-  // The `/v1/earnings/*` resource was removed from the QuantGist backend.
-  // The methods below are kept as deprecated, console.warn-emitting wrappers
-  // so existing consumers do not crash. Each forwards to the closest real
-  // endpoint (`/v1/calendar*` for date-range queries, `/v1/symbols/{symbol}/
-  // events` for ticker-scoped queries). Methods with no exact backend
-  // equivalent (surprises, movers, summary, season-summary) throw
-  // `NotFoundError`. Migrate to `client.calendar.*` / `client.symbols.events()`.
+  // The backend currently exposes `/v1/earnings/*`. These methods are kept as
+  // pass-through convenience wrappers for older SDK consumers. Prefer direct
+  // resource methods or `client.request<T>(path)` for new endpoint coverage.
   // ===========================================================================
 
-  /**
-   * @deprecated `/v1/earnings` was removed. Use `client.calendar.today()`,
-   * `client.calendar.range()`, or `client.symbols.events()` instead. This
-   * wrapper forwards to `GET /v1/calendar` with the `event_type=earnings`
-   * filter (or `GET /v1/symbols/{ticker}/events` when `ticker` is set);
-   * the response shape is the standard paginated calendar response, not
-   * the legacy `EarningsResponse` — the cast is best-effort.
-   */
   async getEarnings(params: GetEarningsParams = {}): Promise<EarningsResponse> {
-    console.warn(
-      '[quantgist-js] getEarnings() is deprecated: /v1/earnings was removed. ' +
-        'Use client.calendar.* or client.symbols.events() instead.',
-    );
-    if (params.ticker) {
-      const query = new URLSearchParams();
-      if (params.limit != null) query.set('per_page', String(params.limit));
-      const qs = query.toString() ? `?${query}` : '';
-      return this.request<EarningsResponse>(
-        `/symbols/${encodeURIComponent(params.ticker.toUpperCase())}/events${qs}`,
-      );
-    }
     const query = new URLSearchParams();
-    query.set('event_type', 'earnings');
-    if (params.from) query.set('date_from', params.from);
-    if (params.to) query.set('date_to', params.to);
-    if (params.limit != null) query.set('per_page', String(params.limit));
-    return this.request<EarningsResponse>(`/calendar?${query}`);
+    if (params.ticker) query.set('ticker', params.ticker.toUpperCase());
+    if (params.from || params.date_from) query.set('date_from', params.from ?? params.date_from!);
+    if (params.to || params.date_to) query.set('date_to', params.to ?? params.date_to!);
+    if (params.cursor) query.set('cursor', params.cursor);
+    if (params.limit != null || params.per_page != null) query.set('limit', String(params.limit ?? params.per_page));
+    const qs = query.toString() ? `?${query}` : '';
+    return this.request<EarningsResponse>(`/earnings${qs}`);
   }
 
-  /**
-   * @deprecated `/v1/earnings/upcoming` was removed. Forwards to
-   * `GET /v1/calendar/upcoming` (all calendar event types — not just
-   * earnings). Migrate to `client.calendar.upcoming()`.
-   */
   async getEarningsUpcoming(limit = 20): Promise<EarningsResponse> {
-    console.warn(
-      '[quantgist-js] getEarningsUpcoming() is deprecated: /v1/earnings/upcoming ' +
-        'was removed. Use client.calendar.upcoming() instead.',
-    );
-    return this.request<EarningsResponse>(`/calendar/upcoming?limit=${limit}`);
+    return this.request<EarningsResponse>(`/earnings/upcoming?limit=${limit}`);
   }
 
-  /**
-   * @deprecated `/v1/earnings/{ticker}` was removed. Forwards to
-   * `GET /v1/symbols/{ticker}/events`. Migrate to `client.symbols.events()`.
-   */
   async getEarningsForTicker(
     ticker: string,
-    params: { cursor?: string; limit?: number } = {},
+    params: { cursor?: string; limit?: number; per_page?: number } = {},
   ): Promise<EarningsResponse> {
-    console.warn(
-      '[quantgist-js] getEarningsForTicker() is deprecated: /v1/earnings/{ticker} ' +
-        'was removed. Use client.symbols.events() instead.',
-    );
     const query = new URLSearchParams();
-    if (params.limit != null) query.set('per_page', String(params.limit));
+    if (params.cursor) query.set('cursor', params.cursor);
+    if (params.limit != null || params.per_page != null) query.set('limit', String(params.limit ?? params.per_page));
     const qs = query.toString() ? `?${query}` : '';
-    return this.request<EarningsResponse>(
-      `/symbols/${encodeURIComponent(ticker.toUpperCase())}/events${qs}`,
-    );
+    return this.request<EarningsResponse>(`/earnings/${encodeURIComponent(ticker.toUpperCase())}${qs}`);
   }
 
-  /**
-   * @deprecated `/v1/earnings/{ticker}/summary` has no backend equivalent
-   * — beat/miss aggregation is no longer provided. Throws `NotFoundError`.
-   */
-  async getEarningsSummary(_ticker: string): Promise<EarningsSummary> {
-    console.warn(
-      '[quantgist-js] getEarningsSummary() is deprecated and has no backend ' +
-        'equivalent in the current v1 API.',
+  async getEarningsSummary(ticker: string): Promise<EarningsSummary> {
+    const resp = await this.request<{ data: EarningsSummary } | EarningsSummary>(
+      `/earnings/${encodeURIComponent(ticker.toUpperCase())}/summary`,
     );
-    throw new NotFoundError(
-      'getEarningsSummary is no longer supported; /v1/earnings/{ticker}/summary was removed.',
-    );
+    return (resp as { data: EarningsSummary }).data ?? (resp as EarningsSummary);
   }
 
-  /**
-   * @deprecated `/v1/earnings/{ticker}/history` has no backend equivalent.
-   * Use `client.symbols.events()` for recent events tagged with the symbol.
-   */
   async getEarningsHistory(
     ticker: string,
-    params: { cursor?: string; limit?: number } = {},
+    params: { cursor?: string; limit?: number; per_page?: number } = {},
   ): Promise<EarningsResponse> {
-    console.warn(
-      '[quantgist-js] getEarningsHistory() is deprecated: /v1/earnings/{ticker}/history ' +
-        'was removed. Use client.symbols.events() instead.',
-    );
     const query = new URLSearchParams();
-    if (params.limit != null) query.set('per_page', String(params.limit));
-    // Widen look-back window to plan maximum (720h ~ 30d)
-    query.set('hours', '720');
-    return this.request<EarningsResponse>(
-      `/symbols/${encodeURIComponent(ticker.toUpperCase())}/events?${query}`,
-    );
+    if (params.cursor) query.set('cursor', params.cursor);
+    if (params.limit != null || params.per_page != null) query.set('limit', String(params.limit ?? params.per_page));
+    const qs = query.toString() ? `?${query}` : '';
+    return this.request<EarningsResponse>(`/earnings/${encodeURIComponent(ticker.toUpperCase())}/history${qs}`);
   }
 
-  /**
-   * @deprecated `/v1/earnings/surprises` has no backend equivalent.
-   * Throws `NotFoundError`.
-   */
-  async getEarningsSurprises(_limit = 20): Promise<EarningsSurprise[]> {
-    console.warn(
-      '[quantgist-js] getEarningsSurprises() is deprecated and has no backend equivalent.',
-    );
-    throw new NotFoundError(
-      'getEarningsSurprises is no longer supported; /v1/earnings/surprises was removed.',
-    );
+  async getEarningsSurprises(limit = 20): Promise<EarningsSurprise[]> {
+    return this.request<EarningsSurprise[]>(`/earnings/surprises?limit=${limit}`);
   }
 
-  /**
-   * @deprecated `/v1/earnings/movers` has no backend equivalent.
-   * Throws `NotFoundError`.
-   */
-  async getEarningsMovers(_limit = 20): Promise<EarningsMover[]> {
-    console.warn(
-      '[quantgist-js] getEarningsMovers() is deprecated and has no backend equivalent.',
-    );
-    throw new NotFoundError(
-      'getEarningsMovers is no longer supported; /v1/earnings/movers was removed.',
-    );
+  async getEarningsMovers(limit = 20): Promise<EarningsMover[]> {
+    return this.request<EarningsMover[]>(`/earnings/movers?limit=${limit}`);
   }
 
-  /**
-   * @deprecated `/v1/earnings/calendar/week` was removed. Forwards to
-   * `GET /v1/calendar?date_from=...&date_to=...` for the current Mon–Sun
-   * (UTC) window. Returns the raw paginated response coerced to the legacy
-   * `EarningsWeekCalendar` shape on a best-effort basis. Migrate to
-   * `client.calendar.range()`.
-   */
   async getEarningsWeekCalendar(): Promise<EarningsWeekCalendar> {
-    console.warn(
-      '[quantgist-js] getEarningsWeekCalendar() is deprecated: ' +
-        '/v1/earnings/calendar/week was removed. Use client.calendar.range() instead.',
-    );
-    const { from, to } = currentWeekRangeUTC();
-    const resp = await this.request<unknown>(
-      `/calendar?date_from=${from}&date_to=${to}&per_page=100`,
-    );
-    return (resp as { data: EarningsWeekCalendar }).data ?? (resp as EarningsWeekCalendar);
+    return this.request<EarningsWeekCalendar>('/earnings/calendar/week');
   }
 
-  /**
-   * @deprecated `/v1/earnings/season/summary` has no backend equivalent.
-   * Throws `NotFoundError`.
-   */
   async getEarningsSeasonSummary(): Promise<EarningsSeasonSummary> {
-    console.warn(
-      '[quantgist-js] getEarningsSeasonSummary() is deprecated and has no backend equivalent.',
+    const resp = await this.request<{ data: EarningsSeasonSummary } | EarningsSeasonSummary>(
+      '/earnings/season/summary',
     );
-    throw new NotFoundError(
-      'getEarningsSeasonSummary is no longer supported; /v1/earnings/season/summary was removed.',
-    );
+    return (resp as { data: EarningsSeasonSummary }).data ?? (resp as EarningsSeasonSummary);
   }
-
   // ===========================================================================
   // DEPRECATED: /v1/markets/* and /v1/changelog convenience wrappers
   //

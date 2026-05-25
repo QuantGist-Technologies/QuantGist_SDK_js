@@ -10,7 +10,8 @@ export function buildQuery(params?: Record<string, unknown>): string {
   if (entries.length === 0) return '';
 
   const usp = new URLSearchParams();
-  for (const [key, value] of entries) {
+  for (const [rawKey, value] of entries) {
+    const key = rawKey === 'page_size' ? 'per_page' : rawKey === 'from' ? 'from_date' : rawKey === 'to' ? 'to_date' : rawKey;
     if (Array.isArray(value)) {
       usp.set(key, (value as unknown[]).join(','));
     } else {

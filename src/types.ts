@@ -96,8 +96,21 @@ export interface PaginatedResponse<T> {
   data: T[];
   total: number;
   page: number;
-  page_size: number;
-  pages: number;
+  per_page: number;
+  total_pages: number;
+}
+
+export interface ResponseMeta {
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+  has_more: boolean;
+}
+
+export interface EventsResponse {
+  data: Event[];
+  meta: ResponseMeta;
 }
 
 // ---- Query param shapes ----
@@ -118,7 +131,7 @@ export interface ListEventsParams {
   sort_by?: string;
   sort_order?: SortOrder;
   page?: number;
-  page_size?: number;
+  per_page?: number;
 }
 
 export interface HistoricalEventsParams {
@@ -127,7 +140,7 @@ export interface HistoricalEventsParams {
   to_date?: string;
   format?: HistoricalFormat;
   page?: number;
-  page_size?: number;
+  per_page?: number;
 }
 
 export interface CalendarParams {
@@ -155,14 +168,14 @@ export interface ListNewsParams {
   to_date?: string;
   q?: string;
   page?: number;
-  page_size?: number;
+  per_page?: number;
 }
 
 export interface ListSymbolsParams {
   q?: string;
   currency?: string;
   page?: number;
-  page_size?: number;
+  per_page?: number;
 }
 
 export interface UsageHistoryParams {
@@ -234,7 +247,7 @@ export interface WatchlistEventsParams {
   to_date?: string;
   impact?: ImpactLevel;
   page?: number;
-  page_size?: number;
+  per_page?: number;
 }
 
 // ---- Calendar upcoming / range (updated) ----
@@ -264,7 +277,7 @@ export interface SymbolEventsParams {
   to_date?: string;
   impact?: ImpactLevel;
   page?: number;
-  page_size?: number;
+  per_page?: number;
 }
 
 // ---- Usage keys ----
@@ -457,10 +470,9 @@ export interface NotificationChannelTestResult {
 // Legacy / deprecated types
 // ===========================================================================
 //
-// The types below back the `/v1/earnings/*` deprecation aliases on
-// `QuantGistClient`. The backend resource was removed; the wrapper methods
-// emit `console.warn` and route to the closest real endpoint (or throw
-// `NotFoundError`). Kept here so existing consumers of the old SDK continue
+// The types below back the `/v1/earnings/*` compatibility methods on
+// `QuantGistClient`. The backend currently exposes `/v1/earnings/*`; these
+// methods are thin pass-throughs kept so existing SDK consumers continue
 // to typecheck.
 
 // ---- Earnings (deprecated) ----
@@ -503,12 +515,15 @@ export interface EarningsResponse {
 
 export interface GetEarningsParams {
   ticker?: string;
-  from?: string;
-  to?: string;
+  from?: string; // deprecated alias for date_from
+  to?: string; // deprecated alias for date_to
+  date_from?: string;
+  date_to?: string;
   sector?: string;
   beat_miss?: BeatMiss;
   cursor?: string;
   limit?: number;
+  per_page?: number; // deprecated alias accepted by the SDK and translated to limit
 }
 
 export interface EarningsSummary {
@@ -598,12 +613,15 @@ export interface ChangelogResponse {
 // ---- Legacy macro-event params shape (deprecated) ----
 
 export interface GetEventsParams {
-  from?: string;
-  to?: string;
+  from?: string; // deprecated alias for date_from
+  to?: string; // deprecated alias for date_to
+  date_from?: string;
+  date_to?: string;
   country?: string;
   currency?: string;
   impact?: ImpactLevel;
   symbol?: string;
-  limit?: number;
+  limit?: number; // deprecated alias for per_page
+  per_page?: number;
   page?: number;
 }
