@@ -46,6 +46,32 @@ console.log(log[0].version, log[0].summary);
 
 Get your free API key at **[quantgist.com/dashboard](https://quantgist.com/dashboard)**.
 
+## Macro Shortcuts
+
+The `/v1/macro/*` endpoints provide trader-friendly aliases for common macro events:
+
+```javascript
+const API_KEY = 'your_api_key';
+const BASE = 'https://api.quantgist.com/v1';
+const headers = { 'X-API-Key': API_KEY };
+
+// Get the latest released NFP value
+const nfp = await fetch(`${BASE}/macro/latest?event=NFP`, { headers }).then(r => r.json());
+console.log(`NFP: ${nfp.actual} (forecast: ${nfp.forecast})`);
+
+// Get next CPI release
+const cpi = await fetch(`${BASE}/macro/upcoming?event=CPI`, { headers }).then(r => r.json());
+console.log(`Next CPI: ${cpi.release_time}`);
+
+// Get upcoming macro calendar (14 days)
+const calendar = await fetch(`${BASE}/macro/calendar?events=CPI,NFP,FOMC&days=14`, { headers }).then(r => r.json());
+calendar.forEach(group => console.log(`${group.event}: ${group.next_release}`));
+```
+
+Supported aliases: `NFP`, `CPI`, `PCE`, `FOMC`, `GDP`, `UNEMPLOYMENT`, `RETAIL_SALES`, `PPI`, `ISM`, `ECB`, `HICP`
+
+---
+
 ## Browser / Next.js usage
 
 The SDK uses only the native `fetch` API — no Node.js-specific modules. It works in any modern browser, Next.js App Router client components, and Cloudflare Workers.
@@ -188,7 +214,7 @@ try {
 - Full API docs: [quantgist.com/docs](https://quantgist.com/docs)
 - Get an API key: [quantgist.com/dashboard](https://quantgist.com/dashboard)
 - Pricing: [quantgist.com/pricing](https://quantgist.com/pricing)
-- Python SDK: [quantgist-python](https://pypi.org/project/quantgist/)
+- Python SDK: [quantgist-python](https://pypi.org/project/quantgist-py/)
 
 ## License
 
