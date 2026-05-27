@@ -2,6 +2,20 @@
 
 All notable changes to `quantgist-js` are documented in this file.
 
+## [0.5.0] — 2026-05-27
+
+### Added
+
+- **News Radar** — `client.news.radar(params?)` returns scored, asset-linked
+  market-risk clusters from `GET /v1/news/radar`. New types: `RadarCluster`,
+  `RadarResponse`, `ListRadarParams`.
+- **Topic catalogue** — `client.news.topics()` and `client.news.topic(slug)`
+  fetch the topic-pack catalogue and individual packs from
+  `GET /v1/news/topics` / `GET /v1/news/topics/{slug}`. New types: `TopicPack`,
+  `TopicsResponse`.
+
+---
+
 ## [0.3.0] - 2026-05-17
 
 ### Added

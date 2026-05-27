@@ -171,6 +171,57 @@ export interface ListNewsParams {
   per_page?: number;
 }
 
+// ── News Radar ───────────────────────────────────────────────────────
+
+export type RadarStatus = 'developing' | 'breaking' | 'fading' | 'resolved';
+
+export interface RadarCluster {
+  id: string;
+  topic: string;
+  headline: string;
+  why_it_matters: string | null;
+  impact_score: number | null;
+  confidence: number | null;
+  affected_assets: string[];
+  event_type: string;
+  status: RadarStatus;
+  source_count: number;
+  first_seen: string | null;
+  latest_seen: string | null;
+}
+
+export interface RadarResponse {
+  items: RadarCluster[];
+  total: number;
+  min_impact: number;
+  lookback_hours: number;
+}
+
+export interface ListRadarParams {
+  topic?: string;
+  symbols?: string | string[];
+  min_impact?: number;
+  event_type?: string;
+  status?: RadarStatus;
+  lookback_hours?: number;
+  limit?: number;
+}
+
+export interface TopicPack {
+  slug: string;
+  display_name: string;
+  description: string;
+  event_type: string;
+  affected_assets: string[];
+  affected_asset_classes: Record<string, string[]>;
+  related_topics: string[];
+}
+
+export interface TopicsResponse {
+  items: TopicPack[];
+  total: number;
+}
+
 export interface ListSymbolsParams {
   q?: string;
   currency?: string;
