@@ -180,9 +180,13 @@ export interface RadarCluster {
   topic: string;
   headline: string;
   why_it_matters: string | null;
+  /** 'template' until upgraded by the ClusterSummarizer to 'llm'. Use for an "AI-enhanced" badge. */
+  why_it_matters_source: 'template' | 'llm';
   impact_score: number | null;
   confidence: number | null;
   affected_assets: string[];
+  /** 'pack' = static topic-pack defaults; 'llm' = ClusterSummarizer extracted specific instruments. */
+  affected_assets_source: 'pack' | 'llm';
   event_type: string;
   status: RadarStatus;
   source_count: number;
@@ -220,6 +224,54 @@ export interface TopicPack {
 export interface TopicsResponse {
   items: TopicPack[];
   total: number;
+}
+
+// ── News Watchlists & Alerts ─────────────────────────────────────────
+
+export interface NewsWatchlist {
+  id: string;
+  topic_slug: string;
+  min_impact: number;
+  created_at: string;
+}
+
+export interface CreateNewsWatchlistParams {
+  topic_slug: string;
+  min_impact?: number;
+}
+
+export interface NewsWatchlistsResponse {
+  items: NewsWatchlist[];
+  total: number;
+}
+
+export interface AlertCluster {
+  headline: string;
+  impact_score: number;
+  status: string;
+  why_it_matters: string | null;
+  why_it_matters_source: 'template' | 'llm';
+  affected_assets: string[];
+  affected_assets_source: 'pack' | 'llm';
+}
+
+export interface NewsAlert {
+  id: string;
+  topic_slug: string;
+  acked_at: string | null;
+  created_at: string;
+  cluster: AlertCluster | null;
+}
+
+export interface ListNewsAlertsParams {
+  unread_only?: boolean;
+  limit?: number;
+}
+
+export interface NewsAlertsResponse {
+  items: NewsAlert[];
+  total: number;
+  unread_only: boolean;
 }
 
 export interface ListSymbolsParams {
