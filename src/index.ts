@@ -80,6 +80,23 @@ export type {
   ListNotificationChannelsParams,
   NotificationChannelTestResult,
 
+  // News Radar models
+  RadarStatus,
+  RadarCluster,
+  RadarResponse,
+  ListRadarParams,
+  TopicPack,
+  TopicsResponse,
+
+  // News Watchlist & Alert models
+  NewsWatchlist,
+  CreateNewsWatchlistParams,
+  NewsWatchlistsResponse,
+  AlertCluster,
+  NewsAlert,
+  ListNewsAlertsParams,
+  NewsAlertsResponse,
+
   // Query param types
   Impact,
   ImpactLevel,
